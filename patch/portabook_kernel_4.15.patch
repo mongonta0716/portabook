@@ -1,101 +1,17 @@
 diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index b0fe527..892ab26 100644
+index 12a5bdf..17d62aa 100644
 --- a/drivers/acpi/scan.c
 +++ b/drivers/acpi/scan.c
-@@ -1511,38 +1511,41 @@ static void acpi_init_coherency(struct acpi_device *adev)
- 	adev->flags.coherent_dma = cca;
- }
+@@ -1543,6 +1543,9 @@ static bool acpi_is_serial_bus_slave(struct acpi_device *device)
+ 	if (acpi_is_indirect_io_slave(device))
+ 		return true;
  
--static int acpi_check_serial_bus_slave(struct acpi_resource *ares, void *data)
-+static int acpi_check_spi_i2c_slave(struct acpi_resource *ares, void *data)
- {
--	bool *is_serial_bus_slave_p = data;
-+	bool *is_spi_i2c_slave_p = data;
- 
- 	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
- 		return 1;
- 
--	*is_serial_bus_slave_p = true;
-+	/*
-+	 * devices that are connected to UART still need to be enumerated to
-+	 * platform bus
-+	 */
-+	if (ares->data.common_serial_bus.type != ACPI_RESOURCE_SERIAL_TYPE_UART)
-+		*is_spi_i2c_slave_p = true;
- 
- 	 /* no need to do more checking */
- 	return -1;
- }
- 
--static bool acpi_is_serial_bus_slave(struct acpi_device *device)
-+static bool acpi_is_spi_i2c_slave(struct acpi_device *device)
- {
- 	struct list_head resource_list;
--	bool is_serial_bus_slave = false;
-+	bool is_spi_i2c_slave = false;
- 
++	if (!strcmp(acpi_device_hid(device), "OBDA8723"))
++		return false;
++
  	/* Macs use device properties in lieu of _CRS resources */
  	if (x86_apple_machine &&
  	    (fwnode_property_present(&device->fwnode, "spiSclkPeriod") ||
--	     fwnode_property_present(&device->fwnode, "i2cAddress") ||
--	     fwnode_property_present(&device->fwnode, "baud")))
-+	     fwnode_property_present(&device->fwnode, "i2cAddress")))
- 		return true;
- 
- 	INIT_LIST_HEAD(&resource_list);
--	acpi_dev_get_resources(device, &resource_list,
--			       acpi_check_serial_bus_slave,
--			       &is_serial_bus_slave);
-+	acpi_dev_get_resources(device, &resource_list, acpi_check_spi_i2c_slave,
-+			       &is_spi_i2c_slave);
- 	acpi_dev_free_resource_list(&resource_list);
- 
--	return is_serial_bus_slave;
-+	return is_spi_i2c_slave;
- }
- 
- void acpi_init_device_object(struct acpi_device *device, acpi_handle handle,
-@@ -1560,7 +1563,7 @@ void acpi_init_device_object(struct acpi_device *device, acpi_handle handle,
- 	acpi_bus_get_flags(device);
- 	device->flags.match_driver = false;
- 	device->flags.initialized = true;
--	device->flags.serial_bus_slave = acpi_is_serial_bus_slave(device);
-+	device->flags.spi_i2c_slave = acpi_is_spi_i2c_slave(device);
- 	acpi_device_clear_enumerated(device);
- 	device_initialize(&device->dev);
- 	dev_set_uevent_suppress(&device->dev, true);
-@@ -1844,10 +1847,10 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- static void acpi_default_enumeration(struct acpi_device *device)
- {
- 	/*
--	 * Do not enumerate SPI/I2C/UART slaves as they will be enumerated by
--	 * their respective parents.
-+	 * Do not enumerate SPI/I2C slaves as they will be enumerated by their
-+	 * respective parents.
- 	 */
--	if (!device->flags.serial_bus_slave) {
-+	if (!device->flags.spi_i2c_slave) {
- 		acpi_create_platform_device(device, NULL);
- 		acpi_device_set_enumerated(device);
- 	} else {
-@@ -1944,7 +1947,7 @@ static void acpi_bus_attach(struct acpi_device *device)
- 		return;
- 
- 	device->flags.match_driver = true;
--	if (ret > 0 && !device->flags.serial_bus_slave) {
-+	if (ret > 0 && !device->flags.spi_i2c_slave) {
- 		acpi_device_set_enumerated(device);
- 		goto ok;
- 	}
-@@ -1953,7 +1956,7 @@ static void acpi_bus_attach(struct acpi_device *device)
- 	if (ret < 0)
- 		return;
- 
--	if (!device->pnp.type.platform_id && !device->flags.serial_bus_slave)
-+	if (!device->pnp.type.platform_id && !device->flags.spi_i2c_slave)
- 		acpi_device_set_enumerated(device);
- 	else
- 		acpi_default_enumeration(device);
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
 index 779c5ae..ce6d44f 100644
 --- a/drivers/hid/Kconfig
@@ -128,7 +44,7 @@ index 235bd2a..46ebb28 100644
  obj-$(CONFIG_HID_LCPOWER)	+= hid-lcpower.o
  obj-$(CONFIG_HID_LENOVO)	+= hid-lenovo.o
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 0c3f608..65019cb 100644
+index 7216336..53b185e 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
 @@ -2089,6 +2089,9 @@ static const struct hid_device_id hid_have_special_driver[] = {
@@ -142,10 +58,10 @@ index 0c3f608..65019cb 100644
  	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_MANTICORE) },
 diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 5da3d62..3ce463e 100644
+index f0ea0bf..4aa8249 100644
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -611,6 +611,8 @@
+@@ -612,6 +612,8 @@
  #define USB_VENDOR_ID_KEYTOUCH		0x0926
  #define USB_DEVICE_ID_KEYTOUCH_IEC	0x3333
  
@@ -238,19 +154,6 @@ index 1f0f44f..f64144c 100644
  		spin_lock_irqsave(&host->lock, flags);
  		host->rescan_disable = 0;
  		spin_unlock_irqrestore(&host->lock, flags);
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 7928762..324a04d 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -212,7 +212,7 @@ struct acpi_device_flags {
- 	u32 of_compatible_ok:1;
- 	u32 coherent_dma:1;
- 	u32 cca_seen:1;
--	u32 serial_bus_slave:1;
-+	u32 spi_i2c_slave:1;
- 	u32 reserved:19;
- };
- 
 diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
 index 41bd496..feb1306 100644
 --- a/net/rfkill/rfkill-gpio.c
