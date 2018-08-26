@@ -2,8 +2,12 @@
 ## patch
 
 Linux用の各種パッチ
+### portabook_kernel_4.18.patch
+  カーネル4.18.x向けのpatch。4.18.5上で作成しています。
+
 ### portabook_kernel_4.14.9.patch
   カーネル4.13.x,4.14.x向けのpatch。4.14.9上で作成しています。
+
 ### portabook_kernel_4.15.patch
   カーネル4.15.x向けのpatch。4.15.0上で作成しています。
   portabookのbluetooth(Realtek rtl8723bs)を動かすために一部4.14までの仕様に戻しました。
