@@ -2,7 +2,9 @@
 ## patch
 
 Linuxカーネル用のパッチ
-カーネルのバージョンアップに合わせて作成していますが、変更点は変わりません。
+
+Ubuntu18.04LTSがリリースされたので今後は4.15をメインで追っていこうと思います。
+
 - Bluetoothアダプタの認識
 	- Realtek RTL8723BS("OBDA8723")を認識させるように変更。
 Kernel4.15以降ではdrivers/acpi/scan.cの仕様変更に対応しています。
@@ -10,25 +12,14 @@ Kernel4.15以降ではdrivers/acpi/scan.cの仕様変更に対応しています
 - 日本語キーボードで使えないキーがある問題に対処
 - サウンドが鳴らない問題に対処
 	- Kernel4.17以降はデフォルトで対応されているのでパッチしていません。
-### portabook_kernel_4.18.patch
-  カーネル4.18.x向けのpatch。4.18.5上で作成しています。
-  変更点は4.17.xと変わりません。
-
-### portabook_kernel_4.14.9.patch
-  カーネル4.13.x,4.14.x向けのpatch。4.14.9上で作成しています。
-
-### portabook_kernel_4.15.patch
-  カーネル4.15.x向けのpatch。4.15.0上で作成しています。
+### portabook_kernel_4.15.patch(★推奨パッチ)
+  Ubuntu18.04のlinux-sourceをベースにしています。(4.15.18)
+  バッテリー表示も少し安定するようです。
   portabookのbluetooth(Realtek rtl8723bs)を動かすためにacpiのスキャン方法を変更しています。
 
-### portabook_kernel_4.16.patch
-  カーネル4.16.x向けのpatch。4.16-rc1上で作成しています。
-  修正点は違うものの基本は4.15と同じ。
-
-### portabook_kernel_4.17.patch
-  カーネル4.17.x向けのpatch。4.17-rc2上で作成しました。
-  4.16版とあまり変わりません。サウンドの変更が不要になったようなので削除しています。
-  サウンド関連の仕様変更が大きいのでサウンド周りで不具合があるかもしれません。
+### portabook_kernel_4.19.patch
+  Bluetoothのパッチが必要なくなりました。
+  サスペンド復帰時に固まります。バッテリー表示も怪しいです。
 
 ## scripts
 ### root-resume.service
@@ -40,3 +31,7 @@ Kernel4.15以降に対応したalsa UCMファイル。
   /usr/share/alsa/ucm/配下にコピーしてください。
 sudo cp -rf ucm/cht-bsw-rt5672 /usr/share/alsa/ucm
 
+# 更新履歴
+## 2018/12/19 
+EOLになったバージョンのパッチを削除
+4.15のベースラインをlinux-sourceパッケージのソースへ変更
