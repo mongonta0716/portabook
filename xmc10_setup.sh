@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # サウンド関連の初期設定
-sudo sed -e '$ a blacklist snd_hdmi_lpe_audio' /etc/modprobe.d/blacklist.conf
+sudo sed -i -e '$ a blacklist snd_hdmi_lpe_audio' /etc/modprobe.d/blacklist.conf
 
 # ucmファイルのコピー
 sudo cp -rf ./ucm/cht-bsw-rt5672 /usr/share/alsa/ucm
