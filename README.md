@@ -1,4 +1,32 @@
 # Kingjim portabook xmc10 専用パッチなど
+
+## Ubuntu 24.04
+
+インストーラーを普通に起動すると白い画面になります。下記の２点の操作が必要です。
+- インストール時に、Ubuntu(safe graphics)を選択してインストール
+
+- インストールしたあとに一度、インストーラーのUSBメモリで起動して、/boot/grub/grub.cfgを編集して、起動オプションに```nomodeset```を追加する必要があります。
+
+Bluetoothやサウンドは動きますが、WiFiは動かないので、なんとかしましょう。(私はTP-LinkのArcherT1Uをさしました)
+
+### キーボードドライバのインストール
+
+ネットワークに接続している必要があります。
+
+キーボードのドライバをdkmsでインストールできるようにしました。￥や＿等のボタンが効くようになります。
+Ubuntu 24.04で動作確認しました。(カーネルは6.8.0-49-generic)
+
+[kingjim-xmc10-x86-64.dkms.tar.gz](dkms/kingjim-xmc10-x86-64.dkms.tar.gz)をダウンロードして、下記のコマンドを実行してください。
+
+例では、ホームディレクトリ上に置いた状態です。
+
+```bash
+sudo dkms ldtarball ~/kingjim-xmc10-x86-64.dkms.tar.gz
+sudo dkms install -m kingjim-xmc10/1.0
+sudo modprobe kingjim-xmc10
+```
+
+
 ## patch
 
 Linuxカーネル用のパッチ
